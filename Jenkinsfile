@@ -35,12 +35,21 @@ pipeline {
                 sh 'mvn jacoco:report'
             }
         }
-        stage('Deploy to Staging') {
-            steps {
-                sh 'scp target/${ARTIFACT_NAME} $STAGING_SERVER:/var/local/staging/'
-                sh 'ssh $STAGING_SERVER "nohup java -jar /var/local/staging/${ARTIFACT_NAME} > /dev/null 2>&1 &"'
-            }
-        }
+	stage('Deploy to Staging') {
+	    steps {
+		sh '''
+		    # Instalar sshpass si no está disponible
+		    which sshpass || (apt-get update && apt-get install -y sshpass openssh-client)
+		    
+		    # Transferir archivo con sshpass
+		    sshpass -p 'password123' scp -o StrictHostKeyChecking=no target/${ARTIFACT_NAME} ${STAGING_SERVER}:/var/local/staging/
+		    
+		    # Matar procesos Java anteriores y ejecutar nuevo
+		    sshpass -p 'password123' ssh -o StrictHostKeyChecking=no ${STAGING_SERVER} "pkill -f 'java.*jar' || true"
+		    sshpass -p 'password123' ssh -o StrictHostKeyChecking=no ${STAGING_SERVER} "nohup java -jar /var/local/staging/${ARTIFACT_NAME} > /var/local/staging/app.log 2>&1 &"
+		'''
+	    }
+	}
         stage('Validate Deployment') {
             steps {
                 sh 'sleep 10'
