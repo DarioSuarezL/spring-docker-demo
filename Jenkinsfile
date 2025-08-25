@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    tools {
+        maven 'M3'  // Usa el mismo nombre que configuraste
+    }    
     environment {
         //Define environment variables
         STAGING_SERVER = 'root@spring-docker-demo'
